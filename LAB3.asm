@@ -3,15 +3,15 @@
 
 .data
                   
-ms_size equ 9
-row_size equ 3
+ms_size equ 30
+row_size equ 5
 
 ms dw ms_size dup(0)
 sum_per_column dw row_size dup(0)
 
 enter_num_start  db "ms[$"
 enter_num_finish db "]: $"
-lowest_sum_message db "The column with the lowest values sum: $"
+lowest_sum_message db "Columns with the lowest sum: $"
 buff    db 6,7 Dup(?)
 error db "Incorrect number, try again: $"
 
@@ -29,7 +29,7 @@ endm
 
 output proc
   ; Check a sign.
-   test    ax, ax
+   test    ax, ax ; cf - negative flag
    jns     loop1
 
     
@@ -43,13 +43,13 @@ output proc
     ; cx - digit count
 loop1:  
     xor     cx, cx
-    mov     bx, 10 ;
+    mov     bx, 10 ; system base
 loop2:
     xor     dx,dx
-    div     bx
+    div     bx  ; divide by numeral system base
 
     push    dx
-    inc     cx
+    inc     cx 
 
     test    ax, ax
     jnz     loop2
@@ -70,15 +70,15 @@ input proc
     xor di,di
     mov dx,offset buff ;
     int 21h
+	
     mov dl, 0dh
     mov ah,02
     int 21h
     mov dl,0ah
     int 21h
     
-
     mov si,offset buff+2 
-    cmp byte ptr [si],"-" ; if negative set a flag
+    cmp byte ptr [si],"-" ; if negative set a flag in di
     jnz @loop1
     mov di,1   
     inc si    
@@ -90,6 +90,7 @@ input proc
     cmp cl,0dh  ; check for the end
     jz endin
     
+	; validation
     cmp cl,'0' 
     jb er
     cmp cl,'9'
@@ -109,7 +110,7 @@ er:
  
 
 endin:
-    cmp di,1 ; if set the number is negative
+    cmp di,1 ; 1 - the number is negative
     jnz @loop3
     neg ax  
 @loop3:
@@ -229,18 +230,35 @@ print_min_column_index proc
         jmp next
     less:
         mov ax, sum_per_column[si]
-        mov dx, cx
     next:
         add si, 2
         inc cx
         cmp cx, row_size
-        je exit
+        je print_min
         jmp find_min
-    exit:
-        push dx
-        pop dx
-        mov ax, dx
-        call output
+    print_min:
+		xor cx, cx
+		xor si, si
+		check_each:
+			mov bx, sum_per_column[si]
+			cmp ax, bx
+			je @print
+			jmp @next
+			@print:
+			    push ax
+				mov ax, cx
+				inc ax
+				push cx
+				call output
+				mov dx, ' '
+				int 21h 
+				pop cx
+				pop ax
+			@next:
+				add si, 2
+				inc cx
+				cmp cx, row_size
+				jne check_each
     ret           
 print_min_column_index endp
   
