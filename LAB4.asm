@@ -332,7 +332,6 @@ random proc
 random endp 
  
 draw_block proc
-    
     push ax
     push bx
     push cx
@@ -476,7 +475,14 @@ end_game proc
 end_game endp 
    
 wait_for_input proc
-    xor al, al
+    xor ax, ax
+    xor bx,bx
+    xor cx,cx
+    xor dx,dx
+    
+    mov player_pos_x, 20
+    mov player_pos_y, 14
+    
     wait_input:
         mov ah, 00h
         int 16h
