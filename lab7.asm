@@ -1,7 +1,7 @@
 .model small  
 
 .data
-    content             db "  ", 128 dup ('$')
+    content             db " ", 128 dup ('$')
     program_name       db "program.exe", 0
     file_name          db 128 dup ('$')
     
@@ -104,16 +104,17 @@ start:
         jc read_error
         cmp ax, 0
         je read_end
-        mov al, buffer
-        mov content[si],al
+    
+        mov al, buffer        
+        cmp al, 13
+        je skip 
+        
+        mov content[si], al
         inc si
         inc counter
         jmp read
     
-    next:
-        mov content[si], ' '
-        inc si
-        inc counter
+    skip:
         jmp read
     
     read_end:
@@ -150,5 +151,5 @@ start:
     program_end:
         mov ax, 4c00h
         int 21h 
-csize=$-main ; длина программы
+csize=$-start ; длина программы
 end start
