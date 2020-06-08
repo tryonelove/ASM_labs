@@ -20,12 +20,12 @@ string db 201                       ; слово для ввода
        db 201 dup('$')              ; сама строка
 found_substr db 0                   ; флаг наличия подстроки
 
-error_sizemsg db "Invalid passed arguments", 10, 13, '$'              ; строки для вывода
+error_sizemsg db "Invalid passed arguments.", 10, 13, '$'
 enter_msg db "Enter string: ", 10, 13, '$'
-find_err db "Can't find file!", 10, 13, 0, '$'                  ;   ошибки при открытии файлов
-path_err db "Can't find file path!", 10, 13, 0, '$'          
-toomany_err db "Too many opened files!", 10, 13, 0, '$'         
-accessdenied_err db "Access denied!", 10, 13, 0, '$'           
+find_err db "Can't find the file!", 10, 13, 0, '$'                  ;   ошибки при открытии файлов
+path_err db "Can't find  the file path.", 10, 13, 0, '$'          
+toomany_err db "Can't open files.", 10, 13, 0, '$'         
+accessdenied_err db "Access denied.", 10, 13, 0, '$'           
 string_err_msg db "Invalid string, try again: ", 10, 13, 0, '$'
 
 .code
@@ -87,8 +87,8 @@ new_line macro
 endm
 
 changePos macro dir, newPos             ; dir - направление сдвига (1 - налево, 0 - направо), newPos - кол-во байт
-    local cnt_change, cnt_changePos     ; локальные переменные для корректной работы макроса
-    mov ah, 42h                         ; код прерывания
+    local cnt_change, cnt_changePos     ; локальные переменные для меток
+    mov ah, 42h                         
     mov al, 1                           ; 1-сдвиг указателя с текущего положения, 2 - с конца, 0 - с начала
     mov bx, fd                          ; дескриптор входного файла
     mov dx, newPos                      ; кол-во байт для сдвига
@@ -133,7 +133,7 @@ openFile proc
     
     openFile_start:
         mov dx, offset filepath        ; путь
-        mov al, 0                     ; способ открытия, read-only
+        mov al, 0                     ; флаги открытия, read-only
         mov ah, 3Dh                    ; открыть файл
         int 21h
         jc openFile_fin_err            ; ошибка открытия файла, CF=1?
@@ -159,7 +159,7 @@ handleLine proc
     call inc_count
     
     handleLine_start:
-        mov ah, 42h                       ; код прерывания
+        mov ah, 42h                       ; установить указатель
         mov al, 0                         ; lseek на 0 позицию
         mov bx, fd                    ; дескриптор
         mov cx, line_begining_dx          ; координату начала строки 
@@ -251,7 +251,7 @@ checkLine proc                                  ; проверка строки на наличие нуж
              
              
             ; проверка слева от слова 
-            mov al,char                 ;сравниваем символы ДО слова
+            mov al,char                 ; сравниваем символы до слова
             cmp al,' '
             je substring
             cmp al,9
@@ -264,9 +264,9 @@ checkLine proc                                  ; проверка строки на наличие нуж
         
         substring:
             mov found_substr,1 
-            jmp checkLineEnd        ;нашли,выходим писать и идем дальше.
+            jmp checkLineEnd        
         no_substr: 
-            jmp checkLineFor        ;продолжаем искать в строке
+            jmp checkLineFor
     jmp checkLineEnd
 
     found_substr_1:                   ; костыль
@@ -310,7 +310,7 @@ checkLine proc                                  ; проверка строки на наличие нуж
     jmp checkLineFor
 
     checkLineEnd:
-    ret
+        ret
 checkLine endp
 
 inc_count proc
@@ -326,7 +326,7 @@ countWord proc                              ; запись в новый файл
 
     checkLines:
         
-        changePos 0, 1           ; сохранение координаты начала строки, 1 направо
+        changePos 0, 1           ; сохранение координаты начала строки, смещение 1 направо
         mov line_begining_dx, dx
         dec ax
         mov line_begining_ax, ax
@@ -334,10 +334,10 @@ countWord proc                              ; запись в новый файл
 
         call checkLine              ; проверка строки
 
-        cmp is_end,1                ; если до конца файла дошли
-        je countWordEnd            ; выход из проги
+        cmp is_end,1                ; если конец файла
+        je countWordEnd            ; выход из программы
 
-        cmp found_substr, 1         ; если надо переписать
+        cmp found_substr, 1         ; если подстрока найдена
         jne checkLines
 
         call handleLine                     
@@ -355,7 +355,7 @@ countWord proc                              ; запись в новый файл
 countWord endp
 
 get_str_size proc               ;берем размер слова(для проверок)
-    mov di,offset string+1      ; а размер во втором байте строки
+    mov di,offset string+1      ; размер во втором байте строки
     mov dh,0
     mov dl,[di]
     mov word_size,0
@@ -368,18 +368,16 @@ start:
     mov ds, ax
     
     xor cx, cx
-    mov cl, es:[80h] ; значение по этому адресу - длина командной строки
+    mov cl, es:[80h] ; длина командной строки
     
-    cmp cl, 0 ; если ничего не ввел в cmd
+    cmp cl, 0 ; если ничего не ввели в cmd
     je exit_bcsize
-    cmp cl, 12  ; 13 - минимальный размер строки
-    jl exit_bcsize
     
     mov si, 81h  ; 81h - адрес командной строки
     xor di,di 
     
-    inc si    ; пропускаем пробел в cmd после названия ехе
-    dec cl   ; skip пробела, а название ехе skip по-дефолту
+    inc si    ; skip space
+    dec cl    ; skip .exe
     
     get_parm:              ;  путь файла
         mov al, es:si
