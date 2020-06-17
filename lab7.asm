@@ -1,12 +1,12 @@
 .model small  
 
 .data
-    content             db " ", 128 dup ('$')
+    content             db 128 dup (' ')
     program_name       db "program.exe", 0
     file_name          db 128 dup ('$')
     
     
-    epb                dw 0 ; блок параметров
+    epb                dw 0 ; блок параметров (exec parameter block)
     cmd_off            dw offset content 
     cmd_seg            dw ?
 
