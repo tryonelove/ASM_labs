@@ -36,8 +36,7 @@ process_command_line macro
     je error
     
     mov di, 81h 
-    mov al, ' '
-    repe scasb
+
     dec di
     xor si, si
     
@@ -125,7 +124,10 @@ start:
     read_end:
         mov ah, 3eh ; закрыть файл
         int 21h
-    
+        
+        cmp counter, 1
+        jle read_error
+        
         mov dl, counter
         mov content[0], dl ; длина командной строки
     
