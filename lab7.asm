@@ -1,25 +1,24 @@
 .model small  
 
 .data
-    content             db 128 dup (' ')
+    content            db "  ", 128 dup ('$')
     program_name       db "program.exe", 0
     file_name          db 128 dup ('$')
-    
-    
-    epb                dw 0 ; блок параметров (exec parameter block)
-    cmd_off            dw offset content 
-    cmd_seg            dw ?
 
     buffer             db 1
-    counter            db 1
+    counter            db 1            
 
     input_error        db "Invalid args.", '$'
     file_open_error    db "Error while opening file.", '$'
     file_reading_error db "Error while reading file.", '$'
     prog_open_error    db "Error while executing external program.", '$'
     
-    EPB_len dw $-epb
-    dsize = $ - content    
+    epb                dw 0 ; блок параметров (exec parameter block)
+    cmd_off            dw offset content 
+    cmd_seg            dw ?
+    
+    EPB_len dw $-epb  ; длина блока EPB
+    dsize = $ - content ; длина блока content    
     
 .stack 100h    
 
@@ -93,28 +92,34 @@ start:
     jc fopen_error
     
     mov bx, ax
-    mov si, 1
+    mov si, 2
     mov counter, 1
     
     read:
-        mov cx, 1
+        mov cx, 1 ; число считываемых байт
         mov dx, offset buffer 
-        mov ah, 3fh ; считать символ
+        mov ah, 3fh
         int 21h
         jc read_error
         cmp ax, 0
         je read_end
     
-        mov al, buffer        
+        mov al, buffer
         cmp al, 13
-        je skip 
+        je next      
+        
+        cmp al,10
+        je read 
         
         mov content[si], al
         inc si
         inc counter
         jmp read
     
-    skip:
+    next:
+        mov content[si], ' '
+        inc si
+        inc counter
         jmp read
     
     read_end:
@@ -122,7 +127,7 @@ start:
         int 21h
     
         mov dl, counter
-        mov content[0], dl
+        mov content[0], dl ; длина командной строки
     
         mov bx, offset epb ; блок epb
         mov dx, offset program_name ; путь к файлу
